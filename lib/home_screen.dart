@@ -1,10 +1,81 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
 import 'notifications_screen.dart';
 import 'models.dart';
 import 'sample_data.dart';
+import 'course_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Biến chứa dữ liệu API 1: User-based (Collaborative Filtering)
+  late Future<List<dynamic>> _recommendationsFuture;
+
+  // Biến chứa dữ liệu API 2: Content-based (Profile/History)
+  late Future<List<dynamic>> _profileBasedFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _recommendationsFuture = fetchRecommendations();
+    _profileBasedFuture = fetchProfileBasedRecommendations();
+  }
+
+  // GỌI API 1: USER-BASED
+  Future<List<dynamic>> fetchRecommendations() async {
+    try {
+      const String baseUrl = 'http://192.168.1.22:5128';
+      final url = Uri.parse('$baseUrl/api/Recommendation/user-based/542');
+      final response = await http.get(url).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Lỗi Server: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Chi tiết lỗi: $e');
+    }
+  }
+
+  // GỌI API 2: CONTENT-BASED (User Profile)
+  Future<List<dynamic>> fetchProfileBasedRecommendations() async {
+    try {
+      const String baseUrl = 'http://192.168.1.22:5128';
+      // Gọi API mới theo hồ sơ user
+      final url = Uri.parse(
+        '$baseUrl/api/Recommendation/content-based/user-profile/542',
+      );
+      final response = await http.get(url).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Lỗi Server: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Chi tiết lỗi: $e');
+    }
+  }
+
+  void _retryUserBasedFetch() {
+    setState(() {
+      _recommendationsFuture = fetchRecommendations();
+    });
+  }
+
+  void _retryProfileBasedFetch() {
+    setState(() {
+      _profileBasedFuture = fetchProfileBasedRecommendations();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,12 +88,18 @@ class HomeScreen extends StatelessWidget {
           children: [
             _buildWelcomeSection(),
             const SizedBox(height: 16),
-            _buildMentorsSection(),
+
+            // Thay thế Mentors tĩnh bằng API Content-Based
+            _buildProfileBasedSection(),
+
             const SizedBox(height: 24),
+
+            // API User-Based (Collab)
             _buildSessionsSection(),
+
             const SizedBox(height: 24),
             _buildGridSection(),
-            const SizedBox(height: 80), // For bottom nav bar overlap
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -40,8 +117,18 @@ class HomeScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 22, height: 2.5, color: Colors.black, margin: const EdgeInsets.only(bottom: 6)),
-              Container(width: 14, height: 2.5, color: Colors.black, margin: const EdgeInsets.only(bottom: 6)),
+              Container(
+                width: 22,
+                height: 2.5,
+                color: Colors.black,
+                margin: const EdgeInsets.only(bottom: 6),
+              ),
+              Container(
+                width: 14,
+                height: 2.5,
+                color: Colors.black,
+                margin: const EdgeInsets.only(bottom: 6),
+              ),
               Container(width: 22, height: 2.5, color: Colors.black),
             ],
           ),
@@ -52,11 +139,17 @@ class HomeScreen extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.black, size: 28),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.black,
+                size: 28,
+              ),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
                 );
               },
             ),
@@ -91,7 +184,10 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(color: Colors.black, fontSize: 18),
               children: [
                 TextSpan(text: 'Welcome, '),
-                TextSpan(text: 'Joffin', style: TextStyle(fontWeight: FontWeight.bold)),
+                TextSpan(
+                  text: 'Joffin',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
@@ -105,7 +201,11 @@ class HomeScreen extends StatelessWidget {
             children: [
               const Text(
                 'CBSE, English, Class 12',
-                style: TextStyle(color: Color(0xFF1E88E5), fontWeight: FontWeight.w600, fontSize: 13),
+                style: TextStyle(
+                  color: Color(0xFF1E88E5),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(width: 6),
               Container(
@@ -114,38 +214,103 @@ class HomeScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 padding: const EdgeInsets.all(2),
-                child: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 14),
+                child: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white,
+                  size: 14,
+                ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMentorsSection() {
+  // UI MỚI: API Content-Based / User Profile
+  Widget _buildProfileBasedSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Recommended Mentors (Based on users\nsimilar to you)',
+            'Recommended Courses\n(Based on your profile)', // Tên mới thay cho Mentor
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 90,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            itemCount: SampleData.mentors.length,
-            itemBuilder: (context, index) {
-              final mentor = SampleData.mentors[index];
-              return Padding(
-                padding: EdgeInsets.only(right: index == SampleData.mentors.length - 1 ? 0 : 12.0),
-                child: _buildMentorCard(mentor),
+          height: 110,
+          child: FutureBuilder<List<dynamic>>(
+            future: _profileBasedFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        snapshot.error.toString().replaceAll('Exception: ', ''),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: _retryProfileBasedFetch,
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(
+                  child: Text('Chưa có gợi ý nào từ hồ sơ của bạn.'),
+                );
+              }
+
+              final recommendedCourses = snapshot.data!;
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                itemCount: recommendedCourses.length,
+                itemBuilder: (context, index) {
+                  final course = recommendedCourses[index];
+
+                  final String apiTitle =
+                      course['title'] ??
+                      course['Title'] ??
+                      course['courseTitle'] ??
+                      course['CourseTitle'] ??
+                      'Khóa học không tên';
+                  final String apiId =
+                      course['courseId']?.toString() ??
+                      course['CourseId']?.toString() ??
+                      'id_$index';
+                  final String apiScore =
+                      course['score']?.toString() ??
+                      course['Score']?.toString() ??
+                      '';
+
+                  final sessionApi = Session(
+                    id: apiId,
+                    title: apiTitle,
+                    subtitle: apiScore.isNotEmpty
+                        ? 'Profile Score: $apiScore'
+                        : 'Khóa học gợi ý',
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: index == recommendedCourses.length - 1 ? 0 : 12.0,
+                    ),
+                    child: _buildSessionCard(context, sessionApi),
+                  );
+                },
               );
             },
           ),
@@ -154,62 +319,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMentorCard(Mentor mentor) {
-    return Container(
-      width: 250,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), bottomLeft: Radius.circular(16)),
-            child: Container(
-              width: 80,
-              height: double.infinity,
-              color: Colors.grey[200],
-              child: const Icon(Icons.person, size: 40, color: Colors.grey),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    mentor.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    mentor.role,
-                    style: const TextStyle(color: Colors.black54, fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // UI CŨ: API User-Based (Collab)
   Widget _buildSessionsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,22 +327,80 @@ class HomeScreen extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Recommended Sessions (Based on users\nsimilar to you)',
+            'Recommended Sessions\n(Based on users similar to you)',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
         const SizedBox(height: 16),
         SizedBox(
           height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            itemCount: SampleData.sessions.length,
-            itemBuilder: (context, index) {
-              final session = SampleData.sessions[index];
-              return Padding(
-                padding: EdgeInsets.only(right: index == SampleData.sessions.length - 1 ? 0 : 12.0),
-                child: _buildSessionCard(session),
+          child: FutureBuilder<List<dynamic>>(
+            future: _recommendationsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        snapshot.error.toString().replaceAll('Exception: ', ''),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: _retryUserBasedFetch,
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('Chưa có gợi ý nào cho bạn.'));
+              }
+
+              final recommendedCourses = snapshot.data!;
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                itemCount: recommendedCourses.length,
+                itemBuilder: (context, index) {
+                  final course = recommendedCourses[index];
+
+                  final String apiTitle =
+                      course['title'] ??
+                      course['Title'] ??
+                      course['courseTitle'] ??
+                      course['CourseTitle'] ??
+                      'Khóa học không tên';
+                  final String apiId =
+                      course['courseId']?.toString() ??
+                      course['CourseId']?.toString() ??
+                      'id_$index';
+                  final String apiScore =
+                      course['score']?.toString() ??
+                      course['Score']?.toString() ??
+                      '';
+
+                  final sessionApi = Session(
+                    id: apiId,
+                    title: apiTitle,
+                    subtitle: apiScore.isNotEmpty
+                        ? 'Similarity Score: $apiScore'
+                        : 'Khóa học gợi ý',
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: index == recommendedCourses.length - 1 ? 0 : 12.0,
+                    ),
+                    child: _buildSessionCard(context, sessionApi),
+                  );
+                },
               );
             },
           ),
@@ -241,61 +409,86 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSessionCard(Session session) {
-    return Container(
-      width: 270,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 90,
-                height: double.infinity,
-                color: Colors.grey[200],
-                child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 30),
-              ),
+  // Widget dùng chung để vẽ thẻ khóa học cho cả 2 List
+  Widget _buildSessionCard(BuildContext context, Session session) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CourseDetailScreen(
+              courseId: session.id,
+              courseTitle: session.title,
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 12, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    session.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1.2),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+        );
+      },
+      child: Container(
+        width: 270,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 2,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 90,
+                  height: double.infinity,
+                  color: Colors.grey[200],
+                  child: const Icon(
+                    Icons.play_circle_fill,
+                    color: Colors.white,
+                    size: 30,
                   ),
-                  const Spacer(),
-                  Text(
-                    session.subtitle,
-                    style: const TextStyle(color: Colors.black54, fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      session.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        height: 1.2,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Text(
+                      session.subtitle,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -313,9 +506,16 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildGridItem(Icons.insert_chart_outlined, 'Programs')),
+              Expanded(
+                child: _buildGridItem(Icons.insert_chart_outlined, 'Programs'),
+              ),
               const SizedBox(width: 16),
-              Expanded(child: _buildGridItem(Icons.design_services_outlined, 'Projects')),
+              Expanded(
+                child: _buildGridItem(
+                  Icons.design_services_outlined,
+                  'Projects',
+                ),
+              ),
             ],
           ),
         ],
@@ -339,7 +539,10 @@ class HomeScreen extends StatelessWidget {
             child: Icon(icon, size: 40, color: const Color(0xFF1E88E5)),
           ),
           const SizedBox(height: 4),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
         ],
       ),
     );
