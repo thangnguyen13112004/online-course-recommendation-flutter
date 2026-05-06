@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'courses_screen.dart';
+import 'course_list_screen.dart';
 import 'bookmarks_screen.dart';
 import 'profile_screen.dart';
 
@@ -16,7 +16,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const CoursesScreen(),
+    const CourseListScreen(),
     const BookmarksScreen(),
     const ProfileScreen(),
   ];
