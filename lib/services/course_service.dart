@@ -67,6 +67,36 @@ class CourseService {
     }
   }
 
+  static Future<Map<String, dynamic>?> getCourseContent(int courseId) async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return null;
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/Learning/course/$courseId'),
+        headers: {'Authorization': 'Bearer ${user.token}'},
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> completeLesson(int lessonId) async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return null;
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/Learning/lesson/$lessonId/complete'),
+        headers: {'Authorization': 'Bearer ${user.token}'},
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<bool> buyCourse(int courseId) async {
     final user = await AuthService.getCurrentUser();
     if (user == null) return false;
