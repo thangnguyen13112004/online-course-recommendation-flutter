@@ -23,7 +23,45 @@ class CourseService {
     try {
       final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Courses/$courseId'));
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final courseData = jsonDecode(response.body);
+        bool isCompleted = false;
+        bool isEnrolled = false;
+        dynamic userReview;
+
+        final user = await AuthService.getCurrentUser();
+        if (user != null) {
+          try {
+            final contentResponse = await http.get(
+              Uri.parse('${ApiConstants.baseUrl}/Learning/course/$courseId'),
+              headers: {'Authorization': 'Bearer ${user.token}'},
+            );
+            if (contentResponse.statusCode == 200) {
+              final contentData = jsonDecode(contentResponse.body);
+              isCompleted = (contentData['phanTramTienDo'] ?? 0) >= 100;
+              isEnrolled = true;
+            }
+          } catch (e) {
+            // Ignore error if not enrolled
+          }
+
+          if (courseData['danhGia'] != null) {
+            final reviews = courseData['danhGia'] as List;
+            try {
+              userReview = reviews.firstWhere(
+                (r) => r['nguoiDanhGia'] != null && r['nguoiDanhGia']['maNguoiDung'] == user.userId,
+              );
+            } catch (e) {
+              userReview = null;
+            }
+          }
+        }
+
+        return {
+          'course': courseData,
+          'isCompleted': isCompleted,
+          'isEnrolled': isEnrolled,
+          'userReview': userReview,
+        };
       }
       return null;
     } catch (e) {
@@ -40,6 +78,29 @@ class CourseService {
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return data.map((json) => RecommendedCourse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<RecommendedCourse>> getPopularCourses() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Courses?sortBy=rating&pageSize=10'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List coursesJson = data['data'];
+        return coursesJson.map((json) {
+          return RecommendedCourse(
+            id: json['maKhoaHoc'] ?? 0,
+            title: json['tieuDe'] ?? '',
+            rating: (json['tbdanhGia'] ?? 0).toDouble(),
+            price: (json['giaGoc'] ?? 0).toDouble(),
+            imageUrl: json['anhUrl'],
+            instructorName: json['giangVien'] is List && (json['giangVien'] as List).isNotEmpty ? json['giangVien'][0]['ten'] : null,
+          );
+        }).toList();
       }
       return [];
     } catch (e) {

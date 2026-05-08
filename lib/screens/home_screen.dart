@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   UserProfile? _user;
   List<RecommendedCourse> _recommendedCourses = [];
   bool _isLoading = true;
+  String _suggestionTitle = 'Suggested Courses';
 
   @override
   void initState() {
@@ -27,19 +28,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     final user = await AuthService.getCurrentUser();
+    List<RecommendedCourse> recommendations = [];
+    
     if (user != null) {
-      final recommendations = await CourseService.getRecommendedCourses();
-      if (mounted) {
-        setState(() {
-          _user = user;
-          _recommendedCourses = recommendations;
-          _isLoading = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      recommendations = await CourseService.getRecommendedCourses();
+    }
+    
+    String title = 'Suggested Courses';
+    if (recommendations.isEmpty) {
+      recommendations = await CourseService.getPopularCourses();
+      title = 'Trending Courses';
+    }
+    
+    if (mounted) {
+      setState(() {
+        _user = user;
+        _recommendedCourses = recommendations;
+        _suggestionTitle = title;
+        _isLoading = false;
+      });
     }
   }
 
@@ -154,11 +161,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Suggested Courses',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            _suggestionTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
         const SizedBox(height: 16),

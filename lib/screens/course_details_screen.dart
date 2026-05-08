@@ -41,6 +41,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
 
     final course = _courseData!['course'];
     final isCompleted = _courseData!['isCompleted'] ?? false;
+    final isEnrolled = _courseData!['isEnrolled'] ?? false;
     final userReview = _courseData!['userReview'];
 
     return Scaffold(
@@ -68,14 +69,14 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
                 children: [
                   _buildOverview(course),
                   _buildCurriculum(course),
-                  _buildReviews(course, userReview, isCompleted),
+                  _buildReviews(course, userReview, isCompleted, isEnrolled),
                 ],
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomAction(isCompleted),
+      bottomNavigationBar: _buildBottomAction(isEnrolled, course['giaGoc']),
     );
   }
 
@@ -164,12 +165,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
     );
   }
 
-  Widget _buildReviews(dynamic course, dynamic userReview, bool isCompleted) {
+  Widget _buildReviews(dynamic course, dynamic userReview, bool isCompleted, bool isEnrolled) {
     final List reviews = course['danhGia'] ?? [];
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        if (!isCompleted && userReview == null)
+        if (isEnrolled && !isCompleted && userReview == null)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
@@ -178,6 +179,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
                 Icon(Icons.lock_outline, color: Colors.grey),
                 SizedBox(width: 12),
                 Expanded(child: Text('Hoàn thành 100% khóa học để gửi đánh giá của bạn.', style: TextStyle(color: Colors.grey))),
+              ],
+            ),
+          ),
+        if (!isEnrolled)
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12)),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 12),
+                Expanded(child: Text('Vui lòng tham gia khóa học để có thể gửi đánh giá.', style: TextStyle(color: Colors.blue))),
               ],
             ),
           ),
@@ -202,7 +216,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
       decoration: BoxDecoration(
         color: isMine ? Colors.blue.shade50 : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.side(color: isMine ? Colors.blue.shade200 : Colors.grey.shade100),
+        border: Border.all(color: isMine ? Colors.blue.shade200 : Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,27 +247,75 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
     );
   }
 
-  Widget _buildBottomAction(bool isCompleted) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => LearningScreen(courseId: widget.courseId))).then((_) => _loadDetails());
-              },
+  Widget _buildBottomAction(bool isEnrolled, dynamic price) {
+    if (isEnrolled) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LearningScreen(courseId: widget.courseId))).then((_) => _loadDetails());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Vào học ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Giá khóa học', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  price != null && price > 0 ? NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(price) : 'Miễn phí',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: _buyCourse,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Vào học ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Mua khóa học', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _buyCourse() async {
+    setState(() => _isLoading = true);
+    final success = await CourseService.buyCourse(widget.courseId);
+    if (success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thành công!'), backgroundColor: Colors.green));
+        _loadDetails();
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thất bại. Vui lòng đăng nhập hoặc thử lại.'), backgroundColor: Colors.red));
+      }
+    }
   }
 }
