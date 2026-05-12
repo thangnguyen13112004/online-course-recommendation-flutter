@@ -6,6 +6,9 @@ import '../services/auth_service.dart';
 import '../services/course_service.dart';
 import 'search_course_screen.dart';
 import 'course_details_screen.dart';
+// Nhớ import 2 file service của bạn vào nhé
+import '../utils/Toast.dart';
+import '../utils/QuickAlertService.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,33 +30,64 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final user = await AuthService.getCurrentUser();
-    List<RecommendedCourse> recommendations = [];
-    
-    if (user != null) {
-      recommendations = await CourseService.getRecommendedCourses();
-    }
-    
-    String title = 'Suggested Courses';
-    if (recommendations.isEmpty) {
-      recommendations = await CourseService.getPopularCourses();
-      title = 'Trending Courses';
-    }
-    
-    if (mounted) {
-      setState(() {
-        _user = user;
-        _recommendedCourses = recommendations;
-        _suggestionTitle = title;
-        _isLoading = false;
-      });
+    try {
+      final user = await AuthService.getCurrentUser();
+      List<RecommendedCourse> recommendations = [];
+      
+      if (user != null) {
+        recommendations = await CourseService.getRecommendedCourses();
+      }
+      
+      String title = 'Suggested Courses';
+      if (recommendations.isEmpty) {
+        recommendations = await CourseService.getPopularCourses();
+        title = 'Trending Courses';
+      }
+      
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _recommendedCourses = recommendations;
+          _suggestionTitle = title;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // Ứng dụng Toast hoặc QuickAlert ngay đây khi có lỗi tải data
+      if (mounted) {
+        setState(() => _isLoading = false);
+        // Có thể dùng ToastUtils.showError('Lỗi kết nối mạng!'); 
+        // Hoặc QuickAlert như bên dưới:
+        QuickAlertService.showAlertFailure(context, 'Không thể tải dữ liệu. Vui lòng thử lại sau!');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      // Đã sửa lại cái loading cho đẹp và tone-sur-tone với app
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFCC33)), // Màu vàng chuẩn
+                strokeWidth: 4,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Đang tải dữ liệu...',
+                style: TextStyle(color: Colors.black54, fontSize: 14, fontWeight: FontWeight.w500),
+              )
+            ],
+          ),
+        ),
+      );
+    
+     
     }
 
     return Scaffold(
@@ -197,6 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCourseCard(RecommendedCourse course) {
     return InkWell(
       onTap: () {
+        // Ví dụ dùng Alert Loading khi click vào xem chi tiết nếu data nặng
+        // QuickAlertService.showAlertLoading(context, 'Đang mở khóa học...');
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => CourseDetailsScreen(courseId: course.id)),

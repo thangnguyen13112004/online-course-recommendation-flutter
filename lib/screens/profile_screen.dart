@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../services/course_service.dart';
-import '../models/course_model.dart';
 import '../models/user_profile_model.dart';
+import 'edit_profile_screen.dart';
+import 'help_support_screen.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,112 +31,211 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _logout() async {
-    await AuthService.clearAuthData();
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+    // Có thể thay bằng QuickAlertConfirm của ông cho đồng bộ, 
+    // ở đây tui làm cái Dialog phẳng cho hợp tone giao diện.
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade50,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              await AuthService.clearAuthData();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Đăng xuất', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      // Màu nền xám nhạt để làm nổi bật các khối màu trắng
+      backgroundColor: const Color(0xFFF4F6F8), 
       appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20)),
-        backgroundColor: const Color(0xFFFFCC33),
+        title: const Text('Tài khoản', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w800, fontSize: 20)),
+        backgroundColor: const Color(0xFFFFCC33), // Vàng solid chuẩn
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: _user == null 
-        ? const Center(child: CircularProgressIndicator())
-        : ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Stack(
+        ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFCC33)))
+        : SingleChildScrollView(
+            child: Column(
               children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.person, size: 60, color: Colors.grey),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1E88E5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.edit, color: Colors.white, size: 16),
-                  ),
-                ),
+                _buildProfileHeader(),
+                const SizedBox(height: 24),
+                _buildMenuSection(context),
+                const SizedBox(height: 40),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              _user!.name,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFFCC33), width: 3), // Viền vàng solid
+                ),
+                child: const Icon(Icons.person, size: 60, color: Colors.grey),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black87, // Nút camera màu đen solid
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Center(
+          const SizedBox(height: 16),
+          Text(
+            _user!.name,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Text(
               _user!.email,
-              style: const TextStyle(color: Colors.black54, fontSize: 14),
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(height: 32),
-          _buildMenuSection(context),
         ],
       ),
     );
   }
 
   Widget _buildMenuSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          _buildMenuItem(Icons.person_outline, 'Edit Profile', onTap: () {}),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.lock_outline, 'Change Password', onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
-          }),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.settings_outlined, 'Settings', onTap: () {}),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.help_outline, 'Help & Support', onTap: () {}),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.logout, 'Log Out', color: Colors.red, onTap: _logout),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03), // Đổ bóng cực mỏng, không loe loét
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildMenuItem(Icons.person_outline, 'Chỉnh sửa hồ sơ', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.lock_outline, 'Đổi mật khẩu', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.settings_outlined, 'Cài đặt hệ thống', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.help_outline, 'Trợ giúp & Hỗ trợ', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(
+              Icons.logout_rounded, 
+              'Đăng xuất', 
+              color: Colors.red, 
+              hideArrow: true,
+              onTap: _logout,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, {Color color = Colors.black87, required VoidCallback onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(title, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.black26),
-      onTap: onTap,
+  Widget _buildMenuItem(IconData icon, String title, {Color color = Colors.black87, bool hideArrow = false, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  // Dùng khối màu nền nhạt tĩnh thay vì gradient
+                  color: color == Colors.red ? Colors.red.shade50 : Colors.grey.shade100, 
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 16),
+                ),
+              ),
+              if (!hideArrow)
+                Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade300, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 70, right: 20),
+      child: Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
     );
   }
 }

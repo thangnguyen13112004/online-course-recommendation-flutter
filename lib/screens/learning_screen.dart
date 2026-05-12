@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/course_service.dart';
+import '../utils/Toast.dart';
 
 class LearningScreen extends StatefulWidget {
   final int courseId;
@@ -43,9 +44,7 @@ class _LearningScreenState extends State<LearningScreen> {
   void _completeLesson(int lessonId) async {
     final result = await CourseService.completeLesson(lessonId);
     if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chúc mừng! Bạn đã hoàn thành bài học.')),
-      );
+      ToastUtils.showSuccess('Chúc mừng! Bạn đã hoàn thành bài học.');
       _loadContent();
     }
   }
