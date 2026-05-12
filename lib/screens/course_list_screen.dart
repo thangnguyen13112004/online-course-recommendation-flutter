@@ -121,12 +121,15 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                         children: [
                                           const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
                                           const SizedBox(width: 6),
-                                          Text(
-                                            'Hết hạn: ${course.expiryDate != null ? DateFormat('dd/MM/yyyy').format(course.expiryDate!) : "Vĩnh viễn (JSON: ${jsonEncode(course.rawJson)})" }',
-                                            style: TextStyle(
-                                              color: Colors.orange.shade900,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
+                                          Flexible(
+                                            child: Text(
+                                              'Hết hạn: ${course.expiryDate != null ? DateFormat('dd/MM/yyyy').format(course.expiryDate!) : "Vĩnh viễn"}',
+                                              style: TextStyle(
+                                                color: Colors.orange.shade900,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                         ],

@@ -30,12 +30,33 @@ class CourseService {
       );
 
       if (response.statusCode == 200) {
-        final courseData = jsonDecode(response.body);
+        final rawData = jsonDecode(response.body);
+        
+        // Extract course
+        dynamic courseData;
+        if (rawData is Map<String, dynamic>) {
+          if (rawData.containsKey('course') && rawData['course'] is Map) {
+            courseData = rawData['course'];
+          } else if (rawData.containsKey('Course') && rawData['Course'] is Map) {
+            courseData = rawData['Course'];
+          } else {
+            courseData = rawData;
+          }
+        } else {
+          courseData = rawData;
+        }
+
         bool isCompleted = false;
         bool isEnrolled = false;
         dynamic userReview;
 
-        final user = await AuthService.getCurrentUser();
+        if (rawData is Map<String, dynamic>) {
+          if (rawData['isCompleted'] != null) isCompleted = rawData['isCompleted'];
+          if (rawData['IsCompleted'] != null) isCompleted = rawData['IsCompleted'];
+          if (rawData['userReview'] != null) userReview = rawData['userReview'];
+          if (rawData['UserReview'] != null) userReview = rawData['UserReview'];
+        }
+
         if (user != null) {
           try {
             final contentResponse = await http.get(
@@ -48,17 +69,17 @@ class CourseService {
               isEnrolled = true;
             }
           } catch (e) {
-            // Ignore error if not enrolled
+            // Ignore
           }
 
-          if (courseData['danhGia'] != null) {
+          if (userReview == null && courseData != null && courseData['danhGia'] != null) {
             final reviews = courseData['danhGia'] as List;
             try {
               userReview = reviews.firstWhere(
                 (r) => r['nguoiDanhGia'] != null && r['nguoiDanhGia']['maNguoiDung'] == user.userId,
               );
             } catch (e) {
-              userReview = null;
+              // Not found
             }
           }
         }
@@ -148,6 +169,18 @@ class CourseService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  static Future<List<dynamic>> getCourseAnnouncements(int courseId) async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Courses/$courseId/announcements'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List;
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 

@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/course_service.dart';
 import '../utils/Toast.dart';
 import 'pdf_viewer_screen.dart';
+import 'quiz_screen.dart';
+import '../api_constants.dart';
 
 class LearningScreen extends StatefulWidget {
   final int courseId;
@@ -120,11 +122,17 @@ class _LearningScreenState extends State<LearningScreen> {
   Future<void> _openDocument(String? url, String title) async {
     if (url == null || url.isEmpty) return;
 
-    if (url.toLowerCase().endsWith('.pdf')) {
+    String finalUrl = url;
+    if (!finalUrl.startsWith('http')) {
+      final baseUrlWithoutApi = ApiConstants.baseUrl.replaceAll('/api', '');
+      finalUrl = '$baseUrlWithoutApi$finalUrl';
+    }
+
+    if (finalUrl.toLowerCase().endsWith('.pdf')) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => PdfViewerScreen(pdfUrl: url, title: title),
+          builder: (context) => PdfViewerScreen(pdfUrl: finalUrl, title: title),
         ),
       );
     } else {
@@ -139,6 +147,113 @@ class _LearningScreenState extends State<LearningScreen> {
         }
       }
     }
+  }
+
+  void _showAnnouncements() async {
+    final announcements = await CourseService.getCourseAnnouncements(widget.courseId);
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Thông báo từ giảng viên', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              if (announcements.isEmpty)
+                const Center(child: Text('Chưa có thông báo nào.'))
+              else
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: announcements.length,
+                    separatorBuilder: (context, index) => const Divider(),
+                    itemBuilder: (context, index) {
+                      final item = announcements[index];
+                      return ListTile(
+                        leading: const Icon(Icons.campaign, color: Colors.blue),
+                        title: Text(item['tieuDe'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(item['noiDung'] ?? ''),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRatingDialog() {
+    double rating = 5.0;
+    String review = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Đánh giá khóa học'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Chúc mừng bạn đã hoàn thành khóa học! Vui lòng để lại đánh giá của bạn.'),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color: Colors.orange,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setStateDialog(() {
+                            rating = index + 1.0;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Nhập bình luận của bạn...',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    onChanged: (val) => review = val,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final success = await CourseService.rateCourse(widget.courseId, rating, review);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(success ? 'Cảm ơn bạn đã đánh giá!' : 'Đánh giá thất bại.')),
+                      );
+                    }
+                  },
+                  child: const Text('Gửi đánh giá'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -157,6 +272,13 @@ class _LearningScreenState extends State<LearningScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_active, color: Colors.blue),
+            onPressed: _showAnnouncements,
+            tooltip: 'Thông báo khóa học',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -216,7 +338,19 @@ class _LearningScreenState extends State<LearningScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Tiến độ học tập', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              Text('${(_progress * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+              if (_progress >= 1.0)
+                TextButton.icon(
+                  onPressed: _showRatingDialog,
+                  icon: const Icon(Icons.star, color: Colors.orange, size: 16),
+                  label: const Text('Đánh giá', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(50, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                )
+              else
+                Text('${(_progress * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
             ],
           ),
           const SizedBox(height: 8),
@@ -320,6 +454,8 @@ class _LearningScreenState extends State<LearningScreen> {
       itemBuilder: (context, index) {
         final chapter = chapters[index];
         final List lessons = chapter['baiHocs'] ?? [];
+        final List quizzes = chapter['baiKiemTras'] ?? [];
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -350,6 +486,27 @@ class _LearningScreenState extends State<LearningScreen> {
                   )
                 ),
                 onTap: () => _onLessonSelected(lesson),
+              );
+            }).toList(),
+            ...quizzes.map((quiz) {
+              return ListTile(
+                dense: true,
+                leading: const Icon(Icons.assignment, color: Colors.orange, size: 18),
+                title: Text(
+                  quiz['tieuDe'] ?? 'Bài kiểm tra',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                ),
+                onTap: () async {
+                  final passed = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QuizScreen(quizId: quiz['maBaiKiemTra']),
+                    ),
+                  );
+                  if (passed == true) {
+                    _loadContent(); // Refresh progress if passed
+                  }
+                },
               );
             }).toList(),
           ],
