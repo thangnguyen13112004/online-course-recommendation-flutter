@@ -110,12 +110,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(course['tieuDe'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(course['tieuDe']?.toString() ?? 'Không có tiêu đề', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 20),
-                      Text(' ${course['tbdanhGia']} (${course['soLuongDanhGia']} đánh giá)', style: const TextStyle(color: Colors.white70)),
+                      Text(' ${course['tbdanhGia'] ?? 0.0} (${course['soLuongDanhGia'] ?? 0} đánh giá)', style: const TextStyle(color: Colors.white70)),
                     ],
                   ),
                 ],
@@ -128,11 +128,51 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
   }
 
   Widget _buildOverview(dynamic course) {
+    final expiryDate = _courseData!['expiryDate'];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (expiryDate != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade100)),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Hạn truy cập: Đến ngày ${DateFormat('dd/MM/yyyy').format(DateTime.parse(expiryDate))}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Thời hạn học:', style: TextStyle(fontSize: 13, color: Colors.black54)),
+                      Text('${course['thoiGianHocDuKien'] ?? 0} tháng', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Thời gian gia hạn:', style: TextStyle(fontSize: 13, color: Colors.black54)),
+                      Text('${course['thoiGianChoPhepTre'] ?? 0} ngày', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           const Text('Mô tả khóa học', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Text(course['moTa'] ?? '', style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.6)),

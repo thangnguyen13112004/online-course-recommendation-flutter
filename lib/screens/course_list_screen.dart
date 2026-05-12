@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../services/auth_service.dart';
 import '../services/course_service.dart';
+import 'package:intl/intl.dart';
 import '../models/course_model.dart';
 import '../models/user_profile_model.dart';
 import 'course_details_screen.dart';
@@ -22,7 +24,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
     _loadCourses();
   }
 
-  void _loadCourses() async {
+  Future<void> _loadCourses() async {
     final courses = await CourseService.getMyCourses();
     if (mounted) {
       setState(() {
@@ -47,8 +49,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _enrolledCourses.isEmpty
               ? const Center(child: Text('You are not enrolled in any courses yet.', style: TextStyle(color: Colors.black54)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
+              : RefreshIndicator(
+                  onRefresh: _loadCourses,
+                  child: ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
                   itemCount: _enrolledCourses.length,
                   itemBuilder: (context, index) {
                     final course = _enrolledCourses[index];
@@ -105,6 +109,29 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                         Text(course.status, style: const TextStyle(color: Color(0xFF1E88E5), fontSize: 12, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Hết hạn: ${course.expiryDate != null ? DateFormat('dd/MM/yyyy').format(course.expiryDate!) : "Vĩnh viễn (JSON: ${jsonEncode(course.rawJson)})" }',
+                                            style: TextStyle(
+                                              color: Colors.orange.shade900,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -115,6 +142,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                     );
                   },
                 ),
+              ),
     );
   }
 }
