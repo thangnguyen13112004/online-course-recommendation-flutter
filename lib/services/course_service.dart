@@ -21,7 +21,14 @@ class CourseService {
 
   static Future<Map<String, dynamic>?> getCourseDetails(int courseId) async {
     try {
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Courses/$courseId'));
+      final user = await AuthService.getCurrentUser();
+      final headers = user != null ? {'Authorization': 'Bearer ${user.token}'} : <String, String>{};
+      
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/Courses/$courseId'),
+        headers: headers,
+      );
+
       if (response.statusCode == 200) {
         final courseData = jsonDecode(response.body);
         bool isCompleted = false;
@@ -119,7 +126,8 @@ class CourseService {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List coursesJson = data['data'];
+        final List? coursesJson = data['data'] ?? data['Data'];
+        if (coursesJson == null) return [];
         return coursesJson.map((json) => EnrolledCourse.fromJson(json)).toList();
       }
       return [];
@@ -185,6 +193,21 @@ class CourseService {
       );
 
       return checkoutRes.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> enrollCourse(int courseId) async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/Learning/enroll/$courseId'),
+        headers: {'Authorization': 'Bearer ${user.token}'},
+      );
+      return response.statusCode == 200;
     } catch (e) {
       return false;
     }
