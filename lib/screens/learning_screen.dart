@@ -3,6 +3,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../services/course_service.dart';
 import '../utils/Toast.dart';
 import 'pdf_viewer_screen.dart';
@@ -173,10 +174,31 @@ class _LearningScreenState extends State<LearningScreen> {
                     separatorBuilder: (context, index) => const Divider(),
                     itemBuilder: (context, index) {
                       final item = announcements[index];
+                      String dateStr = '';
+                      if (item['ngayTao'] != null) {
+                        try {
+                          final date = DateTime.parse(item['ngayTao']);
+                          dateStr = DateFormat('dd/MM/yyyy HH:mm').format(date);
+                        } catch (e) {}
+                      }
+
                       return ListTile(
                         leading: const Icon(Icons.campaign, color: Colors.blue),
                         title: Text(item['tieuDe'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(item['noiDung'] ?? ''),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (dateStr.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                                child: Text(
+                                  dateStr,
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                            Text(item['noiDung'] ?? ''),
+                          ],
+                        ),
                       );
                     },
                   ),
