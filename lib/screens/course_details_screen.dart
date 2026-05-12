@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/course_service.dart';
 import '../models/course_model.dart';
+import '../utils/Toast.dart';
 import 'package:intl/intl.dart';
 import 'learning_screen.dart';
 
@@ -348,13 +349,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
     final success = await CourseService.buyCourse(widget.courseId);
     if (success) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thành công!'), backgroundColor: Colors.green));
+        ToastUtils.showSuccess('Mua khóa học thành công!');
         _loadDetails();
       }
     } else {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thất bại. Vui lòng đăng nhập hoặc thử lại.'), backgroundColor: Colors.red));
+        ToastUtils.showError('Mua khóa học thất bại. Vui lòng đăng nhập hoặc thử lại.');
       }
     }
   }

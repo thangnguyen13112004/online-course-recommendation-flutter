@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/Toast.dart';
 import 'home_screen.dart';
 import 'course_list_screen.dart';
 import 'bookmarks_screen.dart';
@@ -60,9 +61,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Scanner Opening...')),
-              );
+              ToastUtils.showInfo('Scanner Opening...');
             },
             child: Container(
               margin: const EdgeInsets.all(4),
