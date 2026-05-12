@@ -108,12 +108,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(course['tieuDe'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(course['tieuDe']?.toString() ?? 'Không có tiêu đề', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 20),
-                      Text(' ${course['tbdanhGia']} (${course['soLuongDanhGia']} đánh giá)', style: const TextStyle(color: Colors.white70)),
+                      Text(' ${course['tbdanhGia'] ?? 0.0} (${course['soLuongDanhGia'] ?? 0} đánh giá)', style: const TextStyle(color: Colors.white70)),
                     ],
                   ),
                 ],
@@ -126,11 +126,51 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
   }
 
   Widget _buildOverview(dynamic course) {
+    final expiryDate = _courseData!['expiryDate'];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (expiryDate != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade100)),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Hạn truy cập: Đến ngày ${DateFormat('dd/MM/yyyy').format(DateTime.parse(expiryDate))}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Thời hạn học:', style: TextStyle(fontSize: 13, color: Colors.black54)),
+                      Text('${course['thoiGianHocDuKien'] ?? 0} tháng', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Thời gian gia hạn:', style: TextStyle(fontSize: 13, color: Colors.black54)),
+                      Text('${course['thoiGianChoPhepTre'] ?? 0} ngày', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           const Text('Mô tả khóa học', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Text(course['moTa'] ?? '', style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.6)),
@@ -233,27 +273,75 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
     );
   }
 
-  Widget _buildBottomAction(bool isCompleted) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => LearningScreen(courseId: widget.courseId))).then((_) => _loadDetails());
-              },
+  Widget _buildBottomAction(bool isEnrolled, dynamic price) {
+    if (isEnrolled) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LearningScreen(courseId: widget.courseId))).then((_) => _loadDetails());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Vào học ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Giá khóa học', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  price != null && price > 0 ? NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(price) : 'Miễn phí',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: _buyCourse,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Vào học ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Mua khóa học', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _buyCourse() async {
+    setState(() => _isLoading = true);
+    final success = await CourseService.buyCourse(widget.courseId);
+    if (success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thành công!'), backgroundColor: Colors.green));
+        _loadDetails();
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thất bại. Vui lòng đăng nhập hoặc thử lại.'), backgroundColor: Colors.red));
+      }
+    }
   }
 }

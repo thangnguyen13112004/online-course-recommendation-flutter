@@ -21,9 +21,54 @@ class CourseService {
 
   static Future<Map<String, dynamic>?> getCourseDetails(int courseId) async {
     try {
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Courses/$courseId'));
+      final user = await AuthService.getCurrentUser();
+      final headers = user != null ? {'Authorization': 'Bearer ${user.token}'} : <String, String>{};
+      
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/Courses/$courseId'),
+        headers: headers,
+      );
+
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final courseData = jsonDecode(response.body);
+        bool isCompleted = false;
+        bool isEnrolled = false;
+        dynamic userReview;
+
+        final user = await AuthService.getCurrentUser();
+        if (user != null) {
+          try {
+            final contentResponse = await http.get(
+              Uri.parse('${ApiConstants.baseUrl}/Learning/course/$courseId'),
+              headers: {'Authorization': 'Bearer ${user.token}'},
+            );
+            if (contentResponse.statusCode == 200) {
+              final contentData = jsonDecode(contentResponse.body);
+              isCompleted = (contentData['phanTramTienDo'] ?? 0) >= 100;
+              isEnrolled = true;
+            }
+          } catch (e) {
+            // Ignore error if not enrolled
+          }
+
+          if (courseData['danhGia'] != null) {
+            final reviews = courseData['danhGia'] as List;
+            try {
+              userReview = reviews.firstWhere(
+                (r) => r['nguoiDanhGia'] != null && r['nguoiDanhGia']['maNguoiDung'] == user.userId,
+              );
+            } catch (e) {
+              userReview = null;
+            }
+          }
+        }
+
+        return {
+          'course': courseData,
+          'isCompleted': isCompleted,
+          'isEnrolled': isEnrolled,
+          'userReview': userReview,
+        };
       }
       return null;
     } catch (e) {
@@ -58,7 +103,8 @@ class CourseService {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List coursesJson = data['data'];
+        final List? coursesJson = data['data'] ?? data['Data'];
+        if (coursesJson == null) return [];
         return coursesJson.map((json) => EnrolledCourse.fromJson(json)).toList();
       }
       return [];
@@ -124,6 +170,21 @@ class CourseService {
       );
 
       return checkoutRes.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> enrollCourse(int courseId) async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/Learning/enroll/$courseId'),
+        headers: {'Authorization': 'Bearer ${user.token}'},
+      );
+      return response.statusCode == 200;
     } catch (e) {
       return false;
     }
