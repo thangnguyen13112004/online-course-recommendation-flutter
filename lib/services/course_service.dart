@@ -113,6 +113,22 @@ class CourseService {
     }
   }
 
+  static Future<List<RecommendedCourse>> getCollaborativeCourses() async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return [];
+
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Recommendation/user-based/${user.userId}'));
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((json) => RecommendedCourse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   static Future<List<RecommendedCourse>> getPopularCourses() async {
     try {
       final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Courses?sortBy=rating&pageSize=10'));

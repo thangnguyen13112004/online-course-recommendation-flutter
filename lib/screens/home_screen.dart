@@ -19,9 +19,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   UserProfile? _user;
-  List<RecommendedCourse> _recommendedCourses = [];
+  List<RecommendedCourse> _personalizedCourses = [];
+  List<RecommendedCourse> _trendingCourses = [];
   bool _isLoading = true;
-  String _suggestionTitle = 'Suggested Courses';
+  String _trendingTitle = 'Trending Courses';
 
   @override
   void initState() {
@@ -32,23 +33,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     try {
       final user = await AuthService.getCurrentUser();
-      List<RecommendedCourse> recommendations = [];
+      List<RecommendedCourse> personalized = [];
+      List<RecommendedCourse> trending = [];
       
       if (user != null) {
-        recommendations = await CourseService.getRecommendedCourses();
+        personalized = await CourseService.getRecommendedCourses();
+        trending = await CourseService.getCollaborativeCourses();
       }
       
-      String title = 'Suggested Courses';
-      if (recommendations.isEmpty) {
-        recommendations = await CourseService.getPopularCourses();
+      String title = 'Trending Courses';
+      if (trending.isEmpty) {
+        trending = await CourseService.getPopularCourses();
         title = 'Trending Courses';
       }
       
       if (mounted) {
         setState(() {
           _user = user;
-          _recommendedCourses = recommendations;
-          _suggestionTitle = title;
+          _personalizedCourses = personalized;
+          _trendingCourses = trending;
+          _trendingTitle = title;
           _isLoading = false;
         });
       }
@@ -99,7 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             _buildWelcomeSection(),
             const SizedBox(height: 24),
-            _buildSuggestedCoursesSection(),
+            _buildPersonalizedCoursesSection(),
+            if (_personalizedCourses.isNotEmpty) const SizedBox(height: 24),
+            _buildTrendingCoursesSection(),
             const SizedBox(height: 24),
             _buildGridSection(),
             const SizedBox(height: 80),
@@ -191,22 +197,55 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSuggestedCoursesSection() {
+  Widget _buildPersonalizedCoursesSection() {
+    if (_personalizedCourses.isEmpty) return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'Recommended for You',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            itemCount: _personalizedCourses.length,
+            itemBuilder: (context, index) {
+              final course = _personalizedCourses[index];
+              return Padding(
+                padding: EdgeInsets.only(right: index == _personalizedCourses.length - 1 ? 0 : 12.0),
+                child: _buildCourseCard(course),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrendingCoursesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            _suggestionTitle,
+            _trendingTitle,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ),
         const SizedBox(height: 16),
-        if (_recommendedCourses.isEmpty)
+        if (_trendingCourses.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text('No suggested courses available right now.', style: TextStyle(color: Colors.black54)),
+            child: Text('No trending courses available right now.', style: TextStyle(color: Colors.black54)),
           )
         else
           SizedBox(
@@ -214,11 +253,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              itemCount: _recommendedCourses.length,
+              itemCount: _trendingCourses.length,
               itemBuilder: (context, index) {
-                final course = _recommendedCourses[index];
+                final course = _trendingCourses[index];
                 return Padding(
-                  padding: EdgeInsets.only(right: index == _recommendedCourses.length - 1 ? 0 : 12.0),
+                  padding: EdgeInsets.only(right: index == _trendingCourses.length - 1 ? 0 : 12.0),
                   child: _buildCourseCard(course),
                 );
               },
