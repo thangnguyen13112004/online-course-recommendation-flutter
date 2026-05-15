@@ -106,7 +106,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text('${(course.progress * 100).toInt()}% Completed', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                                        Text(course.status, style: const TextStyle(color: Color(0xFF1E88E5), fontSize: 12, fontWeight: FontWeight.bold)),
+                                        Text(course.progress >= 1.0 ? 'Hoàn thành' : course.status, style: const TextStyle(color: Color(0xFF1E88E5), fontSize: 12, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                     const SizedBox(height: 10),
