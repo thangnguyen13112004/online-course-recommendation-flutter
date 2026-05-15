@@ -1,38 +1,77 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:khoa_hoc_online/blocs/profile/profile_bloc.dart';
+import 'package:khoa_hoc_online/blocs/profile/profile_event.dart';
+
 import '../services/auth_service.dart';
 import '../models/user_profile_model.dart';
+import '../blocs/profile/profile_state.dart'; // Import Bloc vừa tạo
+
 import 'edit_profile_screen.dart';
 import 'help_support_screen.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
 import 'settings_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  Widget build(BuildContext context) {
+    // Cung cấp Bloc cho toàn màn hình
+    return BlocProvider(
+      create: (context) => ProfileBloc()..add(LoadProfileEvent()),
+      child: const ProfileScreenView(),
+    );
+  }
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenView extends StatefulWidget {
+  const ProfileScreenView({super.key});
+
+  @override
+  State<ProfileScreenView> createState() => _ProfileScreenViewState();
+}
+
+class _ProfileScreenViewState extends State<ProfileScreenView> {
   UserProfile? _user;
+  File? _selectedLocalImage; // Lưu ảnh vừa chọn từ điện thoại
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    // Khởi tạo không cần gọi API thủ công nữa vì Bloc đã xử lý
   }
 
-  Future<void> _loadUser() async {
-    final user = await AuthService.getCurrentUser();
-    if (mounted) {
-      setState(() => _user = user);
+  // Hàm gọi thư viện chọn ảnh
+  Future<void> _pickImage(BuildContext context) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, 
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedLocalImage = File(pickedFile.path);
+        });
+        
+        // Bắn Event cho Bloc xử lý upload
+        if (mounted) {
+          context.read<ProfileBloc>().add(UploadAvatarEvent(_selectedLocalImage!));
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lỗi khi mở thư viện ảnh')),
+      );
     }
   }
 
   void _logout() async {
-    // Có thể thay bằng QuickAlertConfirm của ông cho đồng bộ, 
-    // ở đây tui làm cái Dialog phẳng cho hợp tone giao diện.
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -71,63 +110,140 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Màu nền xám nhạt để làm nổi bật các khối màu trắng
       backgroundColor: const Color(0xFFF4F6F8), 
       appBar: AppBar(
         title: const Text('Tài khoản', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w800, fontSize: 20)),
-        backgroundColor: const Color(0xFFFFCC33), // Vàng solid chuẩn
+        backgroundColor: const Color(0xFFFFCC33),
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
-      body: _user == null 
-        ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFCC33)))
-        : SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildProfileHeader(),
-                const SizedBox(height: 24),
-                _buildMenuSection(context),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
+      body: BlocListener<ProfileBloc, ProfileState>(
+        listener: (context, state) {
+          if (state is ProfileAvatarUploadSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cập nhật ảnh đại diện thành công!')),
+            );
+            _selectedLocalImage = null;
+          } else if (state is ProfileAvatarUploadFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.errorMessage)),
+            );
+          } else if (state is ProfileUpdateSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
+            );
+          } else if (state is ProfileError) {
+            // Xử lý tự động đăng xuất nếu token hết hạn
+            if (state.message.contains('hết hạn')) {
+              AuthService.clearAuthData();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')),
+              );
+            }
+          }
+        },
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            if (state is ProfileLoading || state is ProfileInitial) {
+              return const Center(child: CircularProgressIndicator(color: Color(0xFFFFCC33)));
+            }
+            
+            // Xử lý lấy thông tin user từ state
+            if (state is ProfileLoaded) {
+              _user = state.user;
+            } else if (state is ProfileUpdateSuccess) {
+              _user = state.user;
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (state is ProfileError)
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
+                      child: Text('Lỗi: ${state.message}', style: const TextStyle(color: Colors.red)),
+                    )
+                  else if (_user != null)
+                    _buildProfileHeader(context),
+                  
+                  const SizedBox(height: 24),
+                  _buildMenuSection(context),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     return Container(
       width: double.infinity,
       color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFFCC33), width: 3), // Viền vàng solid
-                ),
-                child: const Icon(Icons.person, size: 60, color: Colors.grey),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black87, // Nút camera màu đen solid
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
+          // Dùng BlocBuilder bao quanh khu vực Avatar để build lại UI khi loading
+          BlocBuilder<ProfileBloc, ProfileState>(
+            builder: (context, state) {
+              bool isUploading = state is ProfileAvatarUploading;
+
+              return Stack(
+                children: [
+                  Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFFFCC33), width: 3),
+                    ),
+                    // Logic ưu tiên hiển thị: Ảnh mới chọn -> Ảnh từ API -> Icon mặc định
+                    child: ClipOval(
+                      child: _selectedLocalImage != null
+                          ? Image.file(_selectedLocalImage!, fit: BoxFit.cover)
+                          : (_user!.linkAnhDaiDien != null && _user!.linkAnhDaiDien!.isNotEmpty)
+                              ? Image.network(
+                                  _user!.linkAnhDaiDien!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) => const Icon(Icons.person, size: 60, color: Colors.grey),
+                                )
+                              : const Icon(Icons.person, size: 60, color: Colors.grey),
+                    ),
                   ),
-                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                ),
-              ),
-            ],
+                  if (isUploading)
+                    const Positioned.fill(
+                      child: CircularProgressIndicator(color: Color(0xFFFFCC33)),
+                    ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: isUploading ? null : () => _pickImage(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                        ),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           Text(
@@ -151,6 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // _buildMenuSection, _buildMenuItem, _buildDivider giữ nguyên như cũ...
   Widget _buildMenuSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -160,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03), // Đổ bóng cực mỏng, không loe loét
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -169,7 +286,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             _buildMenuItem(Icons.person_outline, 'Chỉnh sửa hồ sơ', onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<ProfileBloc>(),
+                    child: const EditProfileScreen(),
+                  ),
+                ),
+              );
             }),
             _buildDivider(),
             _buildMenuItem(Icons.lock_outline, 'Đổi mật khẩu', onTap: () {
@@ -210,7 +335,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  // Dùng khối màu nền nhạt tĩnh thay vì gradient
                   color: color == Colors.red ? Colors.red.shade50 : Colors.grey.shade100, 
                   borderRadius: BorderRadius.circular(12),
                 ),
