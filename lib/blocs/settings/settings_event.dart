@@ -17,4 +17,9 @@ class ToggleDarkModeEvent extends SettingsEvent {
   ToggleDarkModeEvent(this.value);
 }
 
+class ChangeLanguageEvent extends SettingsEvent {
+  final String language;
+  ChangeLanguageEvent(this.language);
+}
+
 class DeactivateAccountEvent extends SettingsEvent {}

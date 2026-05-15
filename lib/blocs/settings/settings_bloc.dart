@@ -11,6 +11,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<TogglePushNotificationEvent>(_onTogglePush);
     on<ToggleEmailNotificationEvent>(_onToggleEmail);
     on<ToggleDarkModeEvent>(_onToggleDarkMode);
+    on<ChangeLanguageEvent>(_onChangeLanguage);
     on<DeactivateAccountEvent>(_onDeactivateAccount);
   }
 
@@ -21,11 +22,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       final push = prefs.getBool('pushNotifications') ?? true;
       final email = prefs.getBool('emailNotifications') ?? false;
       final dark = prefs.getBool('darkMode') ?? false;
+      final lang = prefs.getString('language') ?? 'vi';
 
       emit(SettingsLoaded(
         pushNotifications: push,
         emailNotifications: email,
         darkMode: dark,
+        language: lang,
       ));
     } catch (e) {
       emit(SettingsError(e.toString()));
@@ -42,6 +45,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         pushNotifications: event.value,
         emailNotifications: currentState.emailNotifications,
         darkMode: currentState.darkMode,
+        language: currentState.language,
       ));
     }
   }
@@ -56,6 +60,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         pushNotifications: currentState.pushNotifications,
         emailNotifications: event.value,
         darkMode: currentState.darkMode,
+        language: currentState.language,
       ));
     }
   }
@@ -70,6 +75,22 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         pushNotifications: currentState.pushNotifications,
         emailNotifications: currentState.emailNotifications,
         darkMode: event.value,
+        language: currentState.language,
+      ));
+    }
+  }
+
+  Future<void> _onChangeLanguage(ChangeLanguageEvent event, Emitter<SettingsState> emit) async {
+    if (state is SettingsLoaded) {
+      final currentState = state as SettingsLoaded;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('language', event.language);
+      
+      emit(SettingsLoaded(
+        pushNotifications: currentState.pushNotifications,
+        emailNotifications: currentState.emailNotifications,
+        darkMode: currentState.darkMode,
+        language: event.language,
       ));
     }
   }

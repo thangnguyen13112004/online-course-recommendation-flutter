@@ -8,11 +8,13 @@ class SettingsLoaded extends SettingsState {
   final bool pushNotifications;
   final bool emailNotifications;
   final bool darkMode;
+  final String language;
 
   SettingsLoaded({
     required this.pushNotifications,
     required this.emailNotifications,
     required this.darkMode,
+    required this.language,
   });
 }
 
