@@ -41,11 +41,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
 
     final course = _courseData!['course'];
     final isCompleted = _courseData!['isCompleted'] ?? false;
-<<<<<<< Updated upstream
-=======
     final isEnrolled = _courseData!['isEnrolled'] ?? false;
     final isExpired = _courseData!['isExpired'] ?? false;
->>>>>>> Stashed changes
     final userReview = _courseData!['userReview'];
 
     return Scaffold(
@@ -80,11 +77,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
           ],
         ),
       ),
-<<<<<<< Updated upstream
-      bottomNavigationBar: _buildBottomAction(isCompleted),
-=======
       bottomNavigationBar: _buildBottomAction(isEnrolled, isExpired, isCompleted, course['giaGoc']),
->>>>>>> Stashed changes
     );
   }
 
@@ -251,7 +244,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
       decoration: BoxDecoration(
         color: isMine ? Colors.blue.shade50 : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.side(color: isMine ? Colors.blue.shade200 : Colors.grey.shade100),
+        border: Border.all(color: isMine ? Colors.blue.shade200 : Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

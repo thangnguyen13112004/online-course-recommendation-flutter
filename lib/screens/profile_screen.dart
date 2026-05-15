@@ -5,11 +5,7 @@ import '../models/course_model.dart';
 import '../models/user_profile_model.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
-<<<<<<< Updated upstream
-=======
-import 'settings_screen.dart';
 import 'transaction_history_screen.dart';
->>>>>>> Stashed changes
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -111,28 +107,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuSection(BuildContext context) {
-<<<<<<< Updated upstream
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          _buildMenuItem(Icons.person_outline, 'Edit Profile', onTap: () {}),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.lock_outline, 'Change Password', onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
-          }),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.settings_outlined, 'Settings', onTap: () {}),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.help_outline, 'Help & Support', onTap: () {}),
-          const Divider(height: 1, indent: 50),
-          _buildMenuItem(Icons.logout, 'Log Out', color: Colors.red, onTap: _logout),
-        ],
-=======
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -141,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03), // Đổ bóng cực mỏng, không loe loét
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -149,38 +123,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Column(
           children: [
-            _buildMenuItem(Icons.person_outline, 'Chỉnh sửa hồ sơ', onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
-            }),
-            _buildDivider(),
             _buildMenuItem(Icons.lock_outline, 'Đổi mật khẩu', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
-            }),
-            _buildDivider(),
-            _buildMenuItem(Icons.settings_outlined, 'Cài đặt hệ thống', onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
             }),
             _buildDivider(),
             _buildMenuItem(Icons.history_rounded, 'Lịch sử giao dịch', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()));
             }),
             _buildDivider(),
-            _buildMenuItem(Icons.help_outline, 'Trợ giúp & Hỗ trợ', onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
-            }),
-            _buildDivider(),
             _buildMenuItem(
               Icons.logout_rounded, 
               'Đăng xuất', 
               color: Colors.red, 
-              hideArrow: true,
               onTap: _logout,
             ),
           ],
         ),
->>>>>>> Stashed changes
       ),
     );
+  }
+
+  Widget _buildDivider() {
+    return Divider(height: 1, indent: 56, endIndent: 16, color: Colors.grey.shade100);
   }
 
   Widget _buildMenuItem(IconData icon, String title, {Color color = Colors.black87, required VoidCallback onTap}) {

@@ -121,25 +121,6 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                       ],
                                     ),
                                     const SizedBox(height: 10),
-<<<<<<< Updated upstream
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.shade50,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Hết hạn: ${course.expiryDate != null ? DateFormat('dd/MM/yyyy').format(course.expiryDate!) : "Vĩnh viễn (JSON: ${jsonEncode(course.rawJson)})" }',
-                                            style: TextStyle(
-                                              color: Colors.orange.shade900,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
-=======
                                     if (course.isExpired)
                                       ElevatedButton(
                                         onPressed: () => _showRepurchaseDialog(course),
@@ -173,7 +154,6 @@ class _CourseListScreenState extends State<CourseListScreen> {
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
->>>>>>> Stashed changes
                                             ),
                                           ],
                                         ),

@@ -3,14 +3,12 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:url_launcher/url_launcher.dart';
-<<<<<<< Updated upstream
-=======
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
->>>>>>> Stashed changes
 import '../services/course_service.dart';
+import '../utils/toast_utils.dart';
 import 'pdf_viewer_screen.dart';
 
 class LearningScreen extends StatefulWidget {
@@ -229,6 +227,81 @@ class _LearningScreenState extends State<LearningScreen> {
     }
   }
 
+  void _showRatingDialog() {
+    double selectedRating = 5.0;
+    final TextEditingController reviewController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Đánh giá khóa học', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Bạn cảm thấy khóa học này như thế nào?'),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < selectedRating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedRating = index + 1.0;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: reviewController,
+                    decoration: const InputDecoration(
+                      hintText: 'Nhập nhận xét của bạn (không bắt buộc)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final success = await CourseService.rateCourse(
+                      widget.courseId,
+                      selectedRating,
+                      reviewController.text,
+                    );
+                    if (mounted) {
+                      Navigator.pop(context);
+                      if (success) {
+                        ToastUtils.showInfo('Cảm ơn bạn đã đánh giá khóa học!');
+                      } else {
+                        ToastUtils.showInfo('Có lỗi xảy ra khi gửi đánh giá.');
+                      }
+                    }
+                  },
+                  child: const Text('Gửi đánh giá'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _openDocument(String? url, String title) async {
     if (url == null || url.isEmpty) return;
 
@@ -328,9 +401,6 @@ class _LearningScreenState extends State<LearningScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Tiến độ học tập', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-<<<<<<< Updated upstream
-              Text('${(_progress * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-=======
               Row(
                 children: [
                   // Certificate viewing button (Only active when progress is 100%)
@@ -369,7 +439,6 @@ class _LearningScreenState extends State<LearningScreen> {
                     Text('${(_progress * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
                 ],
               ),
->>>>>>> Stashed changes
             ],
           ),
           const SizedBox(height: 8),

@@ -61,14 +61,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () {
-<<<<<<< Updated upstream
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Scanner Opening...')),
-=======
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AiRecommendationScreen()),
->>>>>>> Stashed changes
               );
             },
             child: Container(

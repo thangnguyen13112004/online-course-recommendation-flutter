@@ -30,14 +30,6 @@ class CourseService {
       );
 
       if (response.statusCode == 200) {
-<<<<<<< Updated upstream
-        final courseData = jsonDecode(response.body);
-        bool isCompleted = false;
-        bool isEnrolled = false;
-        dynamic userReview;
-
-        final user = await AuthService.getCurrentUser();
-=======
         final rawData = jsonDecode(response.body);
         
         // Extract course
@@ -58,7 +50,6 @@ class CourseService {
         bool isEnrolled = rawData['isEnrolled'] ?? false;
         dynamic userReview = rawData['userReview'];
 
->>>>>>> Stashed changes
         if (user != null) {
           // If already enrolled according to main API, or if we want extra progress info
           try {
@@ -72,11 +63,7 @@ class CourseService {
               isEnrolled = true; // Confirmed
             }
           } catch (e) {
-<<<<<<< Updated upstream
-            // Ignore error if not enrolled
-=======
             // Fallback to what we got from main API
->>>>>>> Stashed changes
           }
 
           if (courseData['danhGia'] != null) {
@@ -110,6 +97,35 @@ class CourseService {
 
     try {
       final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Recommendation/user-profile/${user.userId}'));
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((json) => RecommendedCourse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<RecommendedCourse>> getCollaborativeCourses() async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return [];
+
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Recommendation/collaborative/${user.userId}'));
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((json) => RecommendedCourse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<RecommendedCourse>> getPopularCourses() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Recommendation/popular'));
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return data.map((json) => RecommendedCourse.fromJson(json)).toList();
