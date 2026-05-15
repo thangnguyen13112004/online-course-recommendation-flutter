@@ -13,6 +13,7 @@ import 'edit_profile_screen.dart';
 import 'help_support_screen.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
+import 'transaction_history_screen.dart';
 import 'settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -299,6 +300,10 @@ class _ProfileScreenViewState extends State<ProfileScreenView> {
             _buildDivider(),
             _buildMenuItem(Icons.lock_outline, 'Đổi mật khẩu', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.history_rounded, 'Lịch sử giao dịch', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()));
             }),
             _buildDivider(),
             _buildMenuItem(Icons.settings_outlined, 'Cài đặt hệ thống', onTap: () {
