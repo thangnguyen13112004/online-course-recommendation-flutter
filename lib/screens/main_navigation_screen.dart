@@ -3,6 +3,7 @@ import 'home_screen.dart';
 import 'course_list_screen.dart';
 import 'bookmarks_screen.dart';
 import 'profile_screen.dart';
+import 'ai_recommendation_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -60,8 +61,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () {
+<<<<<<< Updated upstream
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Scanner Opening...')),
+=======
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AiRecommendationScreen()),
+>>>>>>> Stashed changes
               );
             },
             child: Container(
@@ -74,7 +81,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: const Icon(Icons.qr_code_scanner, color: Colors.black87, size: 28),
+              child: const Icon(Icons.auto_awesome, color: Colors.black87, size: 28),
             ),
           ),
         ),

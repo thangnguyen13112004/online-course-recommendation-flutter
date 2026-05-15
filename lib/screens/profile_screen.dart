@@ -5,6 +5,11 @@ import '../models/course_model.dart';
 import '../models/user_profile_model.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
+<<<<<<< Updated upstream
+=======
+import 'settings_screen.dart';
+import 'transaction_history_screen.dart';
+>>>>>>> Stashed changes
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -106,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuSection(BuildContext context) {
+<<<<<<< Updated upstream
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -126,6 +132,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const Divider(height: 1, indent: 50),
           _buildMenuItem(Icons.logout, 'Log Out', color: Colors.red, onTap: _logout),
         ],
+=======
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03), // Đổ bóng cực mỏng, không loe loét
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildMenuItem(Icons.person_outline, 'Chỉnh sửa hồ sơ', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.lock_outline, 'Đổi mật khẩu', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.settings_outlined, 'Cài đặt hệ thống', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.history_rounded, 'Lịch sử giao dịch', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(Icons.help_outline, 'Trợ giúp & Hỗ trợ', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
+            }),
+            _buildDivider(),
+            _buildMenuItem(
+              Icons.logout_rounded, 
+              'Đăng xuất', 
+              color: Colors.red, 
+              hideArrow: true,
+              onTap: _logout,
+            ),
+          ],
+        ),
+>>>>>>> Stashed changes
       ),
     );
   }

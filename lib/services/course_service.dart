@@ -30,13 +30,37 @@ class CourseService {
       );
 
       if (response.statusCode == 200) {
+<<<<<<< Updated upstream
         final courseData = jsonDecode(response.body);
         bool isCompleted = false;
         bool isEnrolled = false;
         dynamic userReview;
 
         final user = await AuthService.getCurrentUser();
+=======
+        final rawData = jsonDecode(response.body);
+        
+        // Extract course
+        dynamic courseData;
+        if (rawData is Map<String, dynamic>) {
+          if (rawData.containsKey('course') && rawData['course'] is Map) {
+            courseData = rawData['course'];
+          } else if (rawData.containsKey('Course') && rawData['Course'] is Map) {
+            courseData = rawData['Course'];
+          } else {
+            courseData = rawData;
+          }
+        } else {
+          courseData = rawData;
+        }
+
+        bool isCompleted = rawData['isCompleted'] ?? false;
+        bool isEnrolled = rawData['isEnrolled'] ?? false;
+        dynamic userReview = rawData['userReview'];
+
+>>>>>>> Stashed changes
         if (user != null) {
+          // If already enrolled according to main API, or if we want extra progress info
           try {
             final contentResponse = await http.get(
               Uri.parse('${ApiConstants.baseUrl}/Learning/course/$courseId'),
@@ -45,10 +69,14 @@ class CourseService {
             if (contentResponse.statusCode == 200) {
               final contentData = jsonDecode(contentResponse.body);
               isCompleted = (contentData['phanTramTienDo'] ?? 0) >= 100;
-              isEnrolled = true;
+              isEnrolled = true; // Confirmed
             }
           } catch (e) {
+<<<<<<< Updated upstream
             // Ignore error if not enrolled
+=======
+            // Fallback to what we got from main API
+>>>>>>> Stashed changes
           }
 
           if (courseData['danhGia'] != null) {
@@ -140,6 +168,24 @@ class CourseService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  static Future<bool> saveLessonTime(int lessonId, int watchTime) async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return false;
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/Learning/lesson/$lessonId/time'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${user.token}'
+        },
+        body: jsonEncode(watchTime),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -236,6 +282,53 @@ class CourseService {
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return data.map((json) => ApiCourse.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<dynamic>> getUserInterests() async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return [];
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/Users/interests'),
+        headers: {'Authorization': 'Bearer ${user.token}'},
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body) as List;
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<bool> updateUserInterests(List<int> categoryIds) async {
+    final user = await AuthService.getCurrentUser();
+    if (user == null) return false;
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/Users/interests'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${user.token}'
+        },
+        body: jsonEncode(categoryIds),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<Category>> getAllCategories() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/Categories?pageSize=100'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List catsJson = data['data'];
+        return catsJson.map((json) => Category.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
