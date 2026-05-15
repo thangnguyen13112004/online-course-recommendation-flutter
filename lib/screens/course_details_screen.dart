@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/course_service.dart';
 import '../models/course_model.dart';
+import '../utils/toast_utils.dart';
 import 'package:intl/intl.dart';
 import 'learning_screen.dart';
 
@@ -70,7 +71,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
                 children: [
                   _buildOverview(course),
                   _buildCurriculum(course),
-                  _buildReviews(course, userReview, isCompleted),
+                  _buildReviews(course, userReview, isCompleted, isEnrolled),
                 ],
               ),
             ),
@@ -206,12 +207,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
     );
   }
 
-  Widget _buildReviews(dynamic course, dynamic userReview, bool isCompleted) {
+  Widget _buildReviews(dynamic course, dynamic userReview, bool isCompleted, bool isEnrolled) {
     final List reviews = course['danhGia'] ?? [];
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        if (!isCompleted && userReview == null)
+        if (isEnrolled && !isCompleted && userReview == null)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
@@ -220,6 +221,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
                 Icon(Icons.lock_outline, color: Colors.grey),
                 SizedBox(width: 12),
                 Expanded(child: Text('Hoàn thành 100% khóa học để gửi đánh giá của bạn.', style: TextStyle(color: Colors.grey))),
+              ],
+            ),
+          ),
+        if (!isEnrolled)
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12)),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 12),
+                Expanded(child: Text('Vui lòng tham gia khóa học để có thể gửi đánh giá.', style: TextStyle(color: Colors.blue))),
               ],
             ),
           ),
@@ -391,13 +405,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with SingleTi
     final success = await CourseService.buyCourse(widget.courseId);
     if (success) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thành công!'), backgroundColor: Colors.green));
+        ToastUtils.showSuccess('Mua khóa học thành công!');
         _loadDetails();
       }
     } else {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mua khóa học thất bại. Vui lòng đăng nhập hoặc thử lại.'), backgroundColor: Colors.red));
+        ToastUtils.showError('Mua khóa học thất bại. Vui lòng đăng nhập hoặc thử lại.');
       }
     }
   }
